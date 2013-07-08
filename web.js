@@ -10,6 +10,10 @@ app.get('/message', function(request, response) {
   response.send('This is my message' );
 });
 
+app.get('/info', function(request, response) {
+  response.send('No info yet' );
+});
+
 var port = process.env.PORT || 5000;
 app.listen(port, function() {
   console.log("Listening on " + port);
