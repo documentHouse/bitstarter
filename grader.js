@@ -82,20 +82,16 @@ if(require.main == module) {
         .option('-u, --url <url>', 'Url for the html file') 
         .parse(process.argv);
     if(program.checks) {
-	console.log(" --checks"); 
     
 	var checkJson;
 	var outJson;
-	    
 
 	if(program.file) {
-	    console.log(" --file");
 	    checkJson = checkHtmlFile(program.file, program.checks);
 	    outJson = JSON.stringify(checkJson, null, 4);
 	    console.log(outJson);
 	}
 	else if(program.url) {
-	    console.log(" --url");
 	    if(program.url) {
 		rest.get(program.url).on('complete', function(result) {
 		    if (!(result instanceof Error)) {
