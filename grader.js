@@ -22,6 +22,7 @@ References:
 */
 
 var fs = require('fs');
+var rest = require('restler');
 var program = require('commander');
 var cheerio = require('cheerio');
 var HTMLFILE_DEFAULT = "index.html";
@@ -39,13 +40,15 @@ var assertFileExists = function(infile) {
 var cheerioHtmlFile = function(htmlfile) {
     return cheerio.load(fs.readFileSync(htmlfile));
 };
+var cheerioHtmlText = function(htmltext) {
+    return cheerio.load(htmltext);
+};
 
 var loadChecks = function(checksfile) {
     return JSON.parse(fs.readFileSync(checksfile));
 };
 
-var checkHtmlFile = function(htmlfile, checksfile) {
-    $ = cheerioHtmlFile(htmlfile);
+var checkHtml = function($, checksfile) {
     var checks = loadChecks(checksfile).sort();
     var out = {};
     for(var ii in checks) {
@@ -53,6 +56,16 @@ var checkHtmlFile = function(htmlfile, checksfile) {
         out[checks[ii]] = present;
     }
     return out;
+}
+
+var checkHtmlFile = function(htmlfile, checksfile) {
+    $ = cheerioHtmlFile(htmlfile);
+    return checkHtml($, checksfile);
+};
+
+var checkHtmlText = function(htmltext, checksfile) {
+    $ = cheerioHtmlText(htmltext);
+    return checkHtml($, checksfile);
 };
 
 var clone = function(fn) {
@@ -64,11 +77,39 @@ var clone = function(fn) {
 if(require.main == module) {
     program
         .option('-c, --checks <check_file>', 'Path to checks.json', clone(assertFileExists), CHECKSFILE_DEFAULT)
-        .option('-f, --file <html_file>', 'Path to index.html', clone(assertFileExists), HTMLFILE_DEFAULT)
+//        .option('-f, --file <html_file>', 'Path to index.html', clone(assertFileExists), HTMLFILE_DEFAULT)
+        .option('-f, --file <html_file>', 'Path to index.html', clone(assertFileExists))
+        .option('-u, --url <url>', 'Url for the html file') 
         .parse(process.argv);
-    var checkJson = checkHtmlFile(program.file, program.checks);
-    var outJson = JSON.stringify(checkJson, null, 4);
-    console.log(outJson);
+    if(program.checks) {
+	console.log(" --checks"); 
+    
+	var checkJson;
+	var outJson;
+	    
+
+	if(program.file) {
+	    console.log(" --file");
+	    checkJson = checkHtmlFile(program.file, program.checks);
+	    outJson = JSON.stringify(checkJson, null, 4);
+	    console.log(outJson);
+	}
+	else if(program.url) {
+	    console.log(" --url");
+	    if(program.url) {
+		rest.get(program.url).on('complete', function(result) {
+		    if (!(result instanceof Error)) {
+			checkJson = checkHtmlText(result, program.checks);
+			outJson = JSON.stringify(checkJson, null, 4);
+			console.log(outJson);
+		    }
+		    else
+			console.log("Could not get the page ", program.url);
+		});
+	    }
+	}
+    }
+
 } else {
     exports.checkHtmlFile = checkHtmlFile;
 }
